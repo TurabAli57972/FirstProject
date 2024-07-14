@@ -1,38 +1,56 @@
 package pkg
 
 import (
-	"errors"
+	"context"
+	"log"
+
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type Service struct {
-	users []Database
+	db *mongo.Client
 }
 
-func NewService() *Service {
-	s := &Service{
-		users: make([]Database, 0),
+func NewService(client *mongo.Client) *Service {
+
+	return &Service{
+		db: client,
 	}
-	s.DummyUsers()
-	return s
-}
-
-func (s *Service) DummyUsers() {
-	s.users = append(s.users, Database{Name: "Turab", Email: "turab@gmail.com", Gender: "male"})
-	s.users = append(s.users, Database{Name: "Saif", Email: "saif@gmail.com", Gender: "male"})
 }
 
 func (s *Service) CreateUserdata(name, email, gender string) (Database, error) {
-	if name == "" || email == "" {
-		return Database{}, errors.New("name and email cannot be empty")
-	}
+	coll := s.db.Database("sample_restaurants").Collection("restaurants")
+	// Creates two sample documents describing restaurants
 	user := Database{
 		Name:   name,
 		Email:  email,
 		Gender: gender,
 	}
-	s.users = append(s.users, user)
+	// Inserts sample documents into the collection
+	_, err := coll.InsertOne(context.TODO(), user)
+	if err != nil {
+		log.Println("Error inserting user into MongoDB:", err)
+		return Database{}, err
+	}
+
 	return user, nil
 }
-func (s *Service) GetAllUsers() []Database {
-	return s.users
+func (s *Service) GetAllUsers() ([]Database, error) {
+	coll := s.db.Database("sample_restaurants").Collection("restaurants")
+	// Creates a query filter to match documents in which the "cuisine"
+	// is "Italian"
+	//filter := bson.D{{"cuisine", "Italian"}}
+	// Retrieves documents that match the query filter
+	cursor, err := coll.Find(context.TODO(), bson.D{})
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(context.TODO())
+	// Unpacks the cursor into a slice
+	var users []Database
+	if err = cursor.All(context.TODO(), &users); err != nil {
+		return nil, err
+	}
+	return users, nil
 }
