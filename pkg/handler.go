@@ -19,7 +19,7 @@ func (h *Handler) GetUsers(c echo.Context) error {
 	users, err := h.srv.GetAllUsers()
 	if err != nil {
 		log.Printf("Error retrieving users: %v", err)
-		return c.JSON(http.StatusInternalServerError, "Failed to retrieve users")
+		return c.JSON(http.StatusNotFound, "Failed to retrieve users")
 	}
 
 	return c.JSON(http.StatusOK, users)
@@ -33,7 +33,7 @@ func (h *Handler) Createuser(c echo.Context) error {
 	}
 	CreatedUser, err := h.srv.CreateUserdata(user.Name, user.Email, user.Gender)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, "Failed to create user")
+		return c.JSON(http.StatusUnprocessableEntity, "Failed to create user")
 	}
 	return c.JSON(http.StatusCreated, CreatedUser)
 }
